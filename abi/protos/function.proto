@@ -1,0 +1,75 @@
+syntax = "proto3";
+package function;
+
+enum FunctionType {
+  FUNCTION_TYPE_UNKNOWN = 0;
+  FUNCTION_TYPE_WASM = 1;
+}
+
+message Function {
+  // unique id for the function, if put into CreateRequest, id should be
+  // empty
+  string id = 1;
+  // user id for the function
+  string user_id = 2;
+  // The function name. This may be at most 64 characters long and can
+  // only contain ASCII letters, numbers, underscores, and hyphens.
+  string name = 3;
+  // The function type. The value of this field determines the exact func
+  // content.
+  FunctionType function_type = 4;
+
+  oneof func {
+    // wasm binary
+    bytes wasm = 5;
+  }
+}
+
+message CreateRequest { Function function = 1; }
+
+message CreateResponse { Function function = 1; }
+
+message UpdateRequest {
+  string id = 1;
+  oneof func {
+    //
+    bytes wasm = 2;
+  }
+}
+
+message UpdateResponse { Function function = 1; }
+
+message DeleteRequest { string id = 1; }
+
+message DeleteResponse { Function function = 1; }
+
+message GetRequest { string id = 1; }
+
+message GetResponse { Function function = 1; }
+
+message FunctionQuery {
+  string user_id = 1;
+  string name = 2;
+}
+
+message QueryRequest {
+  FunctionQuery query = 1;
+}
+
+message ExecuteRequest { string id = 1; }
+
+message ExecuteResponse {}
+
+// Function service
+service FunctionService {
+  // create a function
+  rpc create(CreateRequest) returns (CreateResponse);
+  // update the function
+  rpc update(UpdateRequest) returns (UpdateResponse);
+  // delete the function
+  rpc delete (DeleteRequest) returns (DeleteResponse);
+
+  rpc get(GetRequest) returns (GetResponse);
+
+  rpc query(QueryRequest) returns (stream Function);
+}

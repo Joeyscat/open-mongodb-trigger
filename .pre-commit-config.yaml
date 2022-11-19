@@ -49,13 +49,6 @@ repos:
         language: rust
         files: \.rs$
         pass_filenames: false
-      - id: build-wasm-lib-examples
-        name: build-wasm-lib-examples
-        description: build wasm lib examples
-        entry: bash -c 'cargo build --release --target wasm32-wasi -p example-wasm-hello-world-lib -p example-event-handler'
-        language: rust
-        files: \.rs$
-        pass_filenames: false
       - id: cargo-test
         name: cargo test
         description: unit test for the project
