@@ -1,5 +1,5 @@
 /// Database trigger configuration
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct DatabaseConfig {
     /// The uri of the MongoDB data source.
     #[prost(string, tag = "1")]
@@ -16,10 +16,10 @@ pub struct DatabaseConfig {
     pub operation_types: ::prost::alloc::vec::Vec<i32>,
 }
 /// Authentication trigger configuration
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct AuthenticationConfig {}
 /// Scheduled trigger configuration
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, ::prost::Message)]
 pub struct ScheduledConfig {}
 /// Core trigger object. Contains all the information for a trigger if
 /// ListenResponse op is DELETE, only id will be populated
@@ -128,7 +128,7 @@ pub struct GetResponse {
     #[prost(message, optional, tag = "1")]
     pub trigger: ::core::option::Option<Trigger>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(serde::Serialize, Clone, PartialEq, ::prost::Message)]
 pub struct TriggerQuery {
     #[prost(string, tag = "1")]
     pub user_id: ::prost::alloc::string::String,

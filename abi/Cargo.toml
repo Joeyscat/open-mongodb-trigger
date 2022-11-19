@@ -6,8 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bson = "2.4.0"
+mongodb = "2.3.1"
 prost = "0.11.2"
 prost-types = "0.11.2"
+serde = { version = "1.0.147" }
+thiserror = "1.0.37"
+toml = "0.5.9"
 tonic = { version = "0.8.2", features = ["gzip"] }
 
 [build-dependencies]

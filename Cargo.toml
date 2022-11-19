@@ -1,2 +1,2 @@
 [workspace]
-members = ["abi", "trigger", "service"]
+members = ["abi", "function", "trigger", "service"]
