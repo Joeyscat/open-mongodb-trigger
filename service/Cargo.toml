@@ -9,6 +9,7 @@ edition = "2021"
 abi = { version = "0.1.0", path = "../abi" }
 anyhow = "1.0.66"
 bson = "2.4.0"
+common = { version = "0.1.0", path = "../common" }
 function = { version = "0.1.0", path = "../function" }
 futures = "0.3.25"
 mongodb = "2.3.1"
@@ -18,3 +19,7 @@ tonic = "0.8.2"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
 trigger = { version = "0.1.0", path = "../trigger" }
+wasm = { version = "0.1.0", path = "../wasm" }
+
+[dev-dependencies]
+rand = "0.8.5"

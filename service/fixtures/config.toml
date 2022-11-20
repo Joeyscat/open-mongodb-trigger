@@ -1,0 +1,9 @@
+[db]
+mongodb_uri = 'mongodb://test:test@127.0.0.1:27017'
+db = 'trigger_unittest'
+trigger_coll = 'trigger'
+function_coll = 'function'
+
+[server]
+host = '0.0.0.0'
+port = 6788
