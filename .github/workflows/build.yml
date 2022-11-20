@@ -42,5 +42,7 @@ jobs:
         run: cargo check --all
       - name: Lint rust sources
         run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+      - name: build wasm lib examples
+        run: cargo build --release --target wasm32-wasi -p example-wasm-hello-world-lib -p example-event-handler
       - name: Execute rust tests
         run: cargo nextest run --all-features

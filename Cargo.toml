@@ -1,2 +1,11 @@
 [workspace]
-members = ["abi", "function", "trigger", "service"]
+members = [
+    "abi",
+    "common",
+    "function",
+    "trigger",
+    "service",
+    "wasm",
+    "examples/wasm/hello-world-lib",
+    "examples/wasm/rust-event-handler",
+]

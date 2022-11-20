@@ -1,0 +1,16 @@
+[package]
+name = "wasm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.66"
+bson = "2.4.0"
+common = { version = "0.1.0", path = "../common" }
+serde = { version = "1.0.147", features = ["derive"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
+wasmtime = "2.0.2"
+wasmtime-wasi = "2.0.2"
