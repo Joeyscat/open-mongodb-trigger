@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "abi",
+    "cli",
     "common",
     "function",
     "trigger",

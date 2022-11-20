@@ -1,6 +1,6 @@
 use anyhow::Result;
 use common::mem::{get_raw_bytes, wrap_bytes};
-use tracing::info;
+use tracing::{debug, info};
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
 
@@ -25,14 +25,14 @@ impl WasmEngine {
         wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
 
         let wasi = WasiCtxBuilder::new()
-            // .inherit_stdio()
+            .inherit_stdio()
             // .inherit_args()?
             .build();
         let mut store = Store::new(&engine, wasi);
 
-        info!("Module::new");
+        debug!("Module::new");
         let module = Module::new(&engine, func)?;
-        info!("linker.instantiate");
+        debug!("linker.instantiate");
         let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance
             .get_memory(&mut store, "memory")
@@ -46,18 +46,20 @@ impl WasmEngine {
         let params_data_all = wrap_bytes(params);
         let params_data_size = params_data_all.len();
         // 为参数分配内存并获取指针
+        info!("allocate");
         let allocate_for_params = allocate.call(&mut store, params_data_size as u32)?;
 
         // 将参数写入内存
+        info!("write params data");
         memory.write(&mut store, allocate_for_params as usize, &params_data_all)?;
-
+        // CALL
+        info!("call wasm func");
         let result_pointer_in_store = func.call(&mut store, allocate_for_params)?;
 
         let data_ptr = memory.data_ptr(&store);
         let result_pointer = unsafe { data_ptr.add(result_pointer_in_store as usize) };
         let result_bytes = get_raw_bytes(result_pointer);
-        info!("result: {}", String::from_utf8(result_bytes.clone())?);
-
+        info!("deallocate");
         deallocate.call(&mut store, (allocate_for_params, params_data_size as u32))?;
 
         Ok(result_bytes)

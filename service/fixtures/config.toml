@@ -1,5 +1,5 @@
 [db]
-mongodb_uri = 'mongodb://test:test@127.0.0.1:27017'
+mongodb_uri = 'mongodb://test:test@127.0.0.1:26017'
 db = 'trigger_unittest'
 trigger_coll = 'trigger'
 function_coll = 'function'

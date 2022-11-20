@@ -36,9 +36,11 @@ pub extern "C" fn event_handler_helper(param_ptr: u32) -> u32 {
         Err(e) => EventResult::error(e.to_string()),
     };
 
+    println!("r ==== {:?}", r);
     let result_bytes = bson::to_vec(&r).unwrap();
 
     let wrapped_output = wrap_bytes(&result_bytes);
+    println!("wrapped_output: {:?}", wrapped_output);
 
     let x = wrapped_output.as_ptr();
     x as u32

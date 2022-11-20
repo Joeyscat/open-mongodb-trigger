@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use abi::{trigger::DatabaseOperationType, TriggerConfig, TriggerType};
+use abi::{trigger::DatabaseOperationType, Config, TriggerConfig, TriggerType};
 use bson::{doc, Document};
+use function::DefaultFunctionManager;
 use futures::StreamExt;
 use tokio::task::JoinHandle;
 use tonic::async_trait;
 
-use crate::func::call_func;
+use crate::func;
 
 #[derive(Debug)]
 pub struct Watcher {
@@ -15,22 +16,27 @@ pub struct Watcher {
 
 #[async_trait]
 pub trait WatcherManager {
-    fn new() -> Self;
     async fn add_watcher(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error>;
     async fn remove_watcher(&mut self, key: String) -> Result<(), anyhow::Error>;
 }
 
 pub struct DefaultWatcherManager {
     watchers: HashMap<String, JoinHandle<()>>,
+    function_manager: DefaultFunctionManager,
+}
+impl DefaultWatcherManager {
+    pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
+        let watchers = HashMap::new();
+        let function_manager = DefaultFunctionManager::from_config(&config.db).await?;
+        Ok(Self {
+            watchers,
+            function_manager,
+        })
+    }
 }
 
 #[async_trait]
 impl WatcherManager for DefaultWatcherManager {
-    fn new() -> Self {
-        let watchers = HashMap::new();
-        Self { watchers }
-    }
-
     async fn add_watcher(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error> {
         if self.watchers.contains_key(&key) {
             return Ok(());
@@ -68,10 +74,11 @@ impl WatcherManager for DefaultWatcherManager {
 
                 let mut trigger_cs = coll.watch(pipeline, None).await.unwrap();
 
+                let fm = self.function_manager.clone();
                 let j = tokio::spawn(async move {
                     while let Some(event) = trigger_cs.next().await.transpose().unwrap() {
                         // load the function and call it
-                        call_func(w.trigger.function_id.clone(), event).await;
+                        func::call_func(w.trigger.function_id.clone(), event, fm.clone()).await;
                     }
                 });
 

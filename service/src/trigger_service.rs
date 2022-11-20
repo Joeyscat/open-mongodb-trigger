@@ -8,6 +8,7 @@ use abi::trigger::{
     UpdateResponse,
 };
 use abi::{Config, TriggerService};
+use function::{DefaultFunctionManager, FunctionManager};
 use futures::Stream;
 use tonic::{async_trait, Request, Response, Status};
 use trigger::{DefaultTriggerManager, TriggerManager};
@@ -16,6 +17,7 @@ impl TrigrService {
     pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
         Ok(Self {
             manager: DefaultTriggerManager::from_config(&config.db).await?,
+            function_manager: DefaultFunctionManager::from_config(&config.db).await?,
         })
     }
 }
@@ -27,14 +29,18 @@ impl TriggerService for TrigrService {
         &self,
         request: Request<CreateRequest>,
     ) -> Result<Response<CreateResponse>, Status> {
-        let request = request.into_inner();
-        if request.trigger.is_none() {
-            return Err(Status::invalid_argument("missing trigger"));
-        }
+        let trigger = request
+            .into_inner()
+            .trigger
+            .ok_or_else(|| Status::invalid_argument("missing trigger"))?;
 
-        let trigger = self.manager.create(request.trigger.unwrap()).await?;
+        self.function_manager
+            .get(trigger.function_id.clone())
+            .await?;
+
+        let new_trigger = self.manager.create(trigger).await?;
         Ok(Response::new(CreateResponse {
-            trigger: Some(trigger),
+            trigger: Some(new_trigger),
         }))
     }
     /// update the trigger
@@ -128,34 +134,41 @@ impl<T> Stream for TonicReceiverStream<T> {
 mod tests {
     use abi::{
         trigger::{CreateRequest, DatabaseConfig},
-        Trigger, TriggerService,
+        Function, FunctionService, Trigger, TriggerService,
     };
 
     use crate::{
         test_utils::{rand_str, TestConfig},
-        TrigrService,
+        FuncService, TrigrService,
     };
 
     #[tokio::test]
     async fn rpc_create_should_work() {
         let config = TestConfig::default();
 
-        let service = TrigrService::from_config(&config).await.unwrap();
+        let func_svc = FuncService::from_config(&config).await.unwrap();
+        let func = Function::new_wasm(rand_str(), rand_str(), "Hello, World!".as_bytes());
+        let request = tonic::Request::new(abi::function::CreateRequest {
+            function: Some(func.clone()),
+        });
+        let response = func_svc.create(request).await.unwrap();
+        let func1 = response.into_inner().function;
+        assert!(func1.is_some());
 
+        let trigr_svc = TrigrService::from_config(&config).await.unwrap();
         let tr = Trigger::new_database(
             rand_str(),
             rand_str(),
-            rand_str(),
+            func1.unwrap().id,
             false,
             DatabaseConfig {
                 ..Default::default()
             },
         );
-
         let request = tonic::Request::new(CreateRequest {
             trigger: Some(tr.clone()),
         });
-        let response = service.create(request).await.unwrap();
+        let response = trigr_svc.create(request).await.unwrap();
         let tr1 = response.into_inner().trigger;
         assert!(tr1.is_some());
         let tr1 = tr1.unwrap();

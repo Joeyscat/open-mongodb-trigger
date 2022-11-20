@@ -4,8 +4,8 @@ mod test_utils;
 use std::time::Duration;
 
 use abi::{
-    trigger::{trigger_service_client::TriggerServiceClient, CreateRequest, DatabaseConfig},
-    Config, Trigger,
+    function::{function_service_client::FunctionServiceClient, CreateRequest},
+    Config, Function,
 };
 
 use service::start_server;
@@ -17,45 +17,35 @@ async fn grpc_server_should_work() {
     let tconfig = TestConfig::with_server_port(40000);
     let mut client = get_test_client(&tconfig).await;
 
-    // first we make a trigger
-
-    let mut tr = Trigger::new_database(
-        rand_str(),
-        rand_str(),
-        rand_str(),
-        false,
-        DatabaseConfig {
-            ..Default::default()
-        },
-    );
+    let mut tr = Function::new_wasm(rand_str(), rand_str(), rand_str().as_bytes());
 
     let ret = client
         .create(CreateRequest {
-            trigger: Some(tr.clone()),
+            function: Some(tr.clone()),
         })
         .await
         .unwrap()
         .into_inner()
-        .trigger
+        .function
         .unwrap();
 
     tr.id = ret.id.clone();
     assert_eq!(ret, tr);
 }
 
-async fn get_test_client(tcinfig: &TestConfig) -> TriggerServiceClient<Channel> {
+async fn get_test_client(tcinfig: &TestConfig) -> FunctionServiceClient<Channel> {
     let config = &tcinfig.config;
     setup_server(config);
 
     let fut = async move {
         // if error on conn keep retry util timeout
-        while TriggerServiceClient::connect(config.server.url(false))
+        while FunctionServiceClient::connect(config.server.url(false))
             .await
             .is_err()
         {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
-        TriggerServiceClient::connect(config.server.url(false))
+        FunctionServiceClient::connect(config.server.url(false))
             .await
             .unwrap()
     };

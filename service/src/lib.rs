@@ -25,6 +25,7 @@ use crate::watcher::{DefaultWatcherManager, Watcher};
 
 pub struct TrigrService {
     manager: DefaultTriggerManager,
+    function_manager: DefaultFunctionManager,
 }
 
 pub struct FuncService {
@@ -47,9 +48,9 @@ pub type FunctionStream = Pin<Box<dyn Stream<Item = Result<Function, Status>> + 
 
 pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
     let config_cloned = config.clone();
+    let wm = DefaultWatcherManager::from_config(config).await?;
     tokio::spawn(async move {
         // change listener
-        let wm = DefaultWatcherManager::new();
         watch(&config_cloned, wm).await.unwrap();
     });
 
