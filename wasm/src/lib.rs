@@ -73,7 +73,7 @@ pub fn call_event_handler(func: impl AsRef<[u8]>, params: impl AsRef<[u8]>) -> R
 
 #[cfg(test)]
 mod tests {
-    use common::{event::*, result::EventResult};
+    use common::{event::*, result::EventResult, EXPORT_EVENT_HANDLE_FUNC_NAME};
     use std::{fs::File, io::Read};
 
     use bson::Document;
@@ -112,8 +112,11 @@ mod tests {
         let params_bytes = bson::to_vec(&event).unwrap();
 
         println!("call_wasm_func");
-        let result =
-            engine.call_wasm_func("event_handler_helper", func_bytes.clone(), params_bytes);
+        let result = engine.call_wasm_func(
+            EXPORT_EVENT_HANDLE_FUNC_NAME,
+            func_bytes.clone(),
+            params_bytes,
+        );
         println!("result: {:?}", result);
         let expected_result = EventResult::ok();
         assert_eq!(result.unwrap(), bson::to_vec(&expected_result).unwrap());
@@ -122,8 +125,11 @@ mod tests {
         let params_bytes = bson::to_vec(&event).unwrap();
 
         println!("call_wasm_func");
-        let result =
-            engine.call_wasm_func("event_handler_helper", func_bytes.clone(), params_bytes);
+        let result = engine.call_wasm_func(
+            EXPORT_EVENT_HANDLE_FUNC_NAME,
+            func_bytes.clone(),
+            params_bytes,
+        );
         println!("result: {:?}", result);
         let expected_result = EventResult::error("unsuppored op_type: Delete".to_string());
         assert_eq!(result.unwrap(), bson::to_vec(&expected_result).unwrap());
