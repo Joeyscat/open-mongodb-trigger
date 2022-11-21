@@ -1,7 +1,7 @@
 use abi::function::function::Func;
 use anyhow::anyhow;
 use bson::Document;
-use common::{result::EventResult, EXPORT_EVENT_HANDLE_FUNC_NAME};
+use common::{result::EventResult, EVENT_HANDLER_ENTRY_FUNC_NAME};
 use function::FunctionManager;
 use tracing::{info, warn};
 use wasm::WasmEngine;
@@ -38,7 +38,7 @@ async fn _call_func(
     let engine = WasmEngine::default();
 
     let result_bytes =
-        engine.call_wasm_func(EXPORT_EVENT_HANDLE_FUNC_NAME, func_bytes, param_bytes)?;
+        engine.call_wasm_func(EVENT_HANDLER_ENTRY_FUNC_NAME, func_bytes, param_bytes)?;
     let result = bson::from_slice::<EventResult>(&result_bytes)?;
 
     Ok(result)

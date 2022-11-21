@@ -1,5 +1,8 @@
 use anyhow::Result;
-use common::mem::{get_raw_bytes, wrap_bytes};
+use common::{
+    mem::{get_raw_bytes, wrap_bytes},
+    ALLOCATE_FUNC_NAME, EVENT_HANDLER_ENTRY_FUNC_NAME,
+};
 use tracing::{debug, info};
 use wasmtime::*;
 use wasmtime_wasi::sync::WasiCtxBuilder;
@@ -38,8 +41,7 @@ impl WasmEngine {
             .get_memory(&mut store, "memory")
             .ok_or_else(|| anyhow::format_err!("failed to find `memory` export"))?;
 
-        let allocate = instance.get_typed_func::<u32, u32, _>(&mut store, "allocate")?;
-        let deallocate = instance.get_typed_func::<(u32, u32), (), _>(&mut store, "deallocate")?;
+        let allocate = instance.get_typed_func::<u32, u32, _>(&mut store, ALLOCATE_FUNC_NAME)?;
         let func = instance.get_typed_func::<u32, u32, _>(&mut store, name)?;
 
         let params = params.as_ref();
@@ -59,8 +61,6 @@ impl WasmEngine {
         let data_ptr = memory.data_ptr(&store);
         let result_pointer = unsafe { data_ptr.add(result_pointer_in_store as usize) };
         let result_bytes = get_raw_bytes(result_pointer);
-        info!("deallocate");
-        deallocate.call(&mut store, (allocate_for_params, params_data_size as u32))?;
 
         Ok(result_bytes)
     }
@@ -68,12 +68,12 @@ impl WasmEngine {
 
 pub fn call_event_handler(func: impl AsRef<[u8]>, params: impl AsRef<[u8]>) -> Result<Vec<u8>> {
     let engine = WasmEngine::default();
-    engine.call_wasm_func("event_handler_helper", func, params)
+    engine.call_wasm_func(EVENT_HANDLER_ENTRY_FUNC_NAME, func, params)
 }
 
 #[cfg(test)]
 mod tests {
-    use common::{event::*, result::EventResult, EXPORT_EVENT_HANDLE_FUNC_NAME};
+    use common::{event::*, result::EventResult, EVENT_HANDLER_ENTRY_FUNC_NAME};
     use std::{fs::File, io::Read};
 
     use bson::Document;
@@ -113,7 +113,7 @@ mod tests {
 
         println!("call_wasm_func");
         let result = engine.call_wasm_func(
-            EXPORT_EVENT_HANDLE_FUNC_NAME,
+            EVENT_HANDLER_ENTRY_FUNC_NAME,
             func_bytes.clone(),
             params_bytes,
         );
@@ -126,7 +126,7 @@ mod tests {
 
         println!("call_wasm_func");
         let result = engine.call_wasm_func(
-            EXPORT_EVENT_HANDLE_FUNC_NAME,
+            EVENT_HANDLER_ENTRY_FUNC_NAME,
             func_bytes.clone(),
             params_bytes,
         );
