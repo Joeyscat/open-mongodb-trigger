@@ -102,7 +102,7 @@ mod tests {
         let engine = WasmEngine::default();
 
         let mut f =
-            File::open("../target/wasm32-wasi/release/example_wasm_rust_event_handler.wasm")
+            File::open("../target/wasm32-wasi/release/example_wasm_rust_event_handler_lib.wasm")
                 .unwrap();
         let mut func_bytes = Vec::new();
         // read the whole file

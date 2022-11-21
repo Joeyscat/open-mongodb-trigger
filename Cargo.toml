@@ -9,4 +9,5 @@ members = [
     "wasm",
     "examples/wasm/hello-world-lib",
     "examples/wasm/rust-event-handler",
+    "examples/wasm/rust-event-handler-lib",
 ]

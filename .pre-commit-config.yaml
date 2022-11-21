@@ -52,7 +52,7 @@ repos:
       - id: build-wasm-lib-examples
         name: build-wasm-lib-examples
         description: build wasm lib examples
-        entry: bash -c 'cargo build --release --target wasm32-wasi -p example-wasm-hello-world-lib -p example-wasm-rust-event-handler'
+        entry: bash -c 'cargo build --release --target wasm32-wasi -p example-wasm-hello-world-lib -p example-wasm-rust-event-handler-lib -p example-wasm-rust-event-handler'
         language: rust
         files: \.rs$
         pass_filenames: false
