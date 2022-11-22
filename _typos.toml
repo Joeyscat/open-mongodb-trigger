@@ -1,2 +1,5 @@
 [default.extend-words]
 flate = "flate"
+
+[files]
+extend-exclude = ["README.md"]
