@@ -1,7 +1,7 @@
 pub mod engine;
 pub mod wasmtimecli;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use common::{
     mem::{get_raw_bytes, wrap_bytes},
     ALLOCATE_FUNC_NAME, EVENT_HANDLER_ENTRY_FUNC_NAME,
@@ -61,6 +61,10 @@ impl WasmEngine {
         info!("call wasm func");
         let result_pointer_in_store = func.call(&mut store, allocate_for_params)?;
 
+        if result_pointer_in_store == 0 {
+            return Err(anyhow!("call wasm func error, the result_pointer is 0"));
+        }
+
         let data_ptr = memory.data_ptr(&store);
         let result_pointer = unsafe { data_ptr.add(result_pointer_in_store as usize) };
         let result_bytes = get_raw_bytes(result_pointer);
@@ -100,19 +104,31 @@ mod tests {
 
     #[test]
     fn call_event_handler_should_work() {
+        call_event_handler(
+            "../target/wasm32-wasi/release/example_wasm_rust_event_handler_lib.wasm",
+        );
+    }
+
+    // #[test]
+    // fn call_go_event_handler_should_work() {
+    //     call_event_handler(
+    //         "../examples/wasm/go-event-handler/target/example_wasm_go_event_handler_lib.wasm",
+    //     );
+    // }
+
+    fn call_event_handler(p: &str) {
         tracing_subscriber::fmt::init();
 
         let engine = WasmEngine::default();
 
-        let mut f =
-            File::open("../target/wasm32-wasi/release/example_wasm_rust_event_handler_lib.wasm")
-                .unwrap();
+        let mut f = File::open(p).unwrap();
         let mut func_bytes = Vec::new();
         // read the whole file
         f.read_to_end(&mut func_bytes).unwrap();
 
         let mut event: ChangeStreamEvent<Document> = ChangeStreamEvent::default();
-        let params_bytes = bson::to_vec(&event).unwrap();
+
+        let params_bytes = serde_json::to_vec(&event).unwrap();
 
         println!("call_wasm_func");
         let result = engine.call_wasm_func(
@@ -122,10 +138,13 @@ mod tests {
         );
         println!("result: {:?}", result);
         let expected_result = EventResult::ok();
-        assert_eq!(result.unwrap(), bson::to_vec(&expected_result).unwrap());
+        assert_eq!(
+            result.unwrap(),
+            serde_json::to_vec(&expected_result).unwrap()
+        );
 
         event.operation_type = OperationType::Delete;
-        let params_bytes = bson::to_vec(&event).unwrap();
+        let params_bytes = serde_json::to_vec(&event).unwrap();
 
         println!("call_wasm_func");
         let result = engine.call_wasm_func(
@@ -135,6 +154,9 @@ mod tests {
         );
         println!("result: {:?}", result);
         let expected_result = EventResult::error("unsuppored op_type: Delete".to_string());
-        assert_eq!(result.unwrap(), bson::to_vec(&expected_result).unwrap());
+        assert_eq!(
+            result.unwrap(),
+            serde_json::to_vec(&expected_result).unwrap()
+        );
     }
 }

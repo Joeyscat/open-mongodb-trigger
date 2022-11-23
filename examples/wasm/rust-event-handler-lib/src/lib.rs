@@ -28,7 +28,7 @@ pub extern "C" fn deallocate(pointer: u32, capacity: u32) {
 pub extern "C" fn event_handler_entry(param_ptr: u32) -> u32 {
     let event_bytes: Vec<u8> = get_raw_bytes(param_ptr as *const u8);
     // deserialize bytes to event struct
-    let r = match bson::from_slice::<event::ChangeStreamEvent<Document>>(&event_bytes) {
+    let r = match serde_json::from_slice::<event::ChangeStreamEvent<Document>>(&event_bytes) {
         Ok(event) => match event_handler(event) {
             Ok(_) => EventResult::ok(),
             Err(e) => EventResult::error(e.to_string()),
@@ -37,7 +37,7 @@ pub extern "C" fn event_handler_entry(param_ptr: u32) -> u32 {
     };
 
     println!("r ==== {:?}", r);
-    let result_bytes = bson::to_vec(&r).unwrap();
+    let result_bytes = serde_json::to_vec(&r).unwrap();
 
     let wrapped_output = wrap_bytes(&result_bytes);
     println!("wrapped_output: {:?}", wrapped_output);
