@@ -18,6 +18,9 @@ Basic architecture:
 
 ![basic arch](images/arch01.png)
 
+
+![basic arch](images/arch02.png)
+
 ### Service interface
 
 We would use gRPC as a service interface. Below is the proto definition:
