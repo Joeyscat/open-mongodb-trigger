@@ -1,6 +1,3 @@
-pub mod engine;
-pub mod wasmtimecli;
-
 use anyhow::{anyhow, Result};
 use common::{
     mem::{get_raw_bytes, wrap_bytes},
