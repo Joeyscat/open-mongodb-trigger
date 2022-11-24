@@ -17,7 +17,12 @@ async fn grpc_server_should_work() {
     let tconfig = TestConfig::with_server_port(40000);
     let mut client = get_test_client(&tconfig).await;
 
-    let mut tr = Function::new_wasm(rand_str(), rand_str(), rand_str().as_bytes());
+    let mut tr = Function::new_wasm(
+        rand_str(),
+        rand_str(),
+        rand_str().as_bytes(),
+        abi::function::Lang::Rust,
+    );
 
     let ret = client
         .create(CreateRequest {

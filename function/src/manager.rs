@@ -255,7 +255,12 @@ mod tests {
     ) -> (abi::Function, DefaultFunctionManager) {
         let manager = DefaultFunctionManager::new(coll);
         let wasm_func_binary = "Hello, World!".as_bytes();
-        let function = abi::Function::new_wasm("aliceid", "insert_and_delete", wasm_func_binary);
+        let function = abi::Function::new_wasm(
+            "aliceid",
+            "insert_and_delete",
+            wasm_func_binary,
+            abi::function::Lang::Rust,
+        );
 
         (manager.create(function).await.unwrap(), manager)
     }

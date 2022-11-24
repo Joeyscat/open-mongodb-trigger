@@ -15,6 +15,12 @@ pub enum Error {
     #[error("Unsupported trigger type: {0}")]
     UnsupportedTriggerType(i32),
 
+    #[error("Unsupported function lang: {0}")]
+    UnsupportedFunctionLang(i32),
+
+    #[error("Unsupported function lang string: {0}")]
+    UnsupportedFunctionLangStr(String),
+
     #[error("Invalid trigger")]
     InvalidTrigger,
 
@@ -39,6 +45,8 @@ impl From<Error> for tonic::Status {
             | Error::ConfigReadError(_)
             | Error::ConfigParseError(_)
             | Error::UnsupportedTriggerType(_)
+            | Error::UnsupportedFunctionLang(_)
+            | Error::UnsupportedFunctionLangStr(_)
             | Error::InvalidTrigger
             | Error::InvalidFunction => tonic::Status::internal(e.to_string()),
             Error::TriggerNotFound => {

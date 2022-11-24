@@ -147,7 +147,12 @@ mod tests {
         let config = TestConfig::default();
 
         let func_svc = FuncService::from_config(&config).await.unwrap();
-        let func = Function::new_wasm(rand_str(), rand_str(), "Hello, World!".as_bytes());
+        let func = Function::new_wasm(
+            rand_str(),
+            rand_str(),
+            "Hello, World!".as_bytes(),
+            abi::function::Lang::Rust,
+        );
         let request = tonic::Request::new(abi::function::CreateRequest {
             function: Some(func.clone()),
         });

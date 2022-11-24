@@ -1,5 +1,7 @@
 mod manager;
 
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use bson::{oid::ObjectId, Binary};
 use mongodb::Collection;
@@ -19,6 +21,7 @@ pub struct Function {
     pub name: String,
     pub function_type: i32,
     pub func: Func,
+    pub lang: String,
 }
 
 impl Function {
@@ -31,6 +34,10 @@ impl Function {
             }),
             _ => return Err(abi::Error::InvalidFunction),
         };
+        let lang = abi::function::Lang::from_i32(f.lang)
+            .unwrap_or(abi::function::Lang::Unknown)
+            .as_str_name()
+            .to_string();
 
         Ok(Self {
             id: None,
@@ -38,6 +45,7 @@ impl Function {
             name: f.name,
             function_type: f.function_type,
             func: ff,
+            lang,
         })
     }
 
@@ -46,12 +54,14 @@ impl Function {
             (Func::Wasm(x), Some(abi::FunctionType::Wasm)) => abi::Func::Wasm(x.bytes),
             _ => return Err(abi::Error::InvalidFunction),
         };
+        let lang = abi::function::Lang::from_str(self.lang.as_str())? as i32;
         Ok(abi::Function {
             id: self.id.unwrap().to_hex(),
             user_id: self.user_id,
             name: self.name,
             function_type: self.function_type,
             func: Some(ff),
+            lang,
         })
     }
 }

@@ -1,4 +1,4 @@
-use bson::{Bson, DateTime, Document, RawBson, RawDocumentBuf, Timestamp};
+use bson::{doc, Bson, DateTime, Document, RawBson, RawDocumentBuf, Timestamp};
 use serde::{Deserialize, Serialize};
 
 /// An opaque token used for resuming an interrupted
@@ -92,7 +92,9 @@ pub struct ChangeStreamEvent<T> {
 impl Default for ChangeStreamEvent<Document> {
     fn default() -> Self {
         Self {
-            id: ResumeToken(bson::RawBson::Int32(1)),
+            id: ResumeToken(bson::RawBson::Document(
+                RawDocumentBuf::from_document(&doc! {"_data":"xx"}).unwrap(),
+            )),
             operation_type: OperationType::Insert,
             ns: Default::default(),
             to: Default::default(),

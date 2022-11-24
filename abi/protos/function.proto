@@ -6,6 +6,12 @@ enum FunctionType {
   FUNCTION_TYPE_WASM = 1;
 }
 
+enum Lang {
+  UNKNOWN = 0;
+  RUST = 1;
+  GO = 2;
+}
+
 message Function {
   // unique id for the function, if put into CreateRequest, id should be
   // empty
@@ -23,6 +29,8 @@ message Function {
     // wasm binary
     bytes wasm = 5;
   }
+
+  Lang lang = 6;
 }
 
 message CreateRequest { Function function = 1; }

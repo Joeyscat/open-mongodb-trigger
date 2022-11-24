@@ -4,7 +4,7 @@ use abi::{
 };
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use std::{fs::File, io::Read, path::PathBuf};
+use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -99,6 +99,8 @@ enum FunctionCommands {
         type_: String,
         #[arg(short, long)]
         user_id: String,
+        #[arg(short, long)]
+        lang: String,
     },
     /// update file for a function.
     UpdateFile {
@@ -257,13 +259,16 @@ function_id: {}"#,
                 path,
                 type_,
                 user_id,
+                lang,
             } => {
                 let function = match type_.as_str() {
                     "wasm" => {
+                        let lang = abi::function::Lang::from_str(&lang)?;
+
                         let mut f = File::open(path)?;
                         let mut func_bytes = Vec::new();
                         f.read_to_end(&mut func_bytes)?;
-                        abi::Function::new_wasm(user_id, name, func_bytes)
+                        abi::Function::new_wasm(user_id, name, func_bytes, lang)
                     }
                     _ => {
                         println!("unsupported function type: {}", type_);
