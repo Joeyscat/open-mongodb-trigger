@@ -1,8 +1,9 @@
+use core::time;
 use std::collections::HashMap;
 
-use abi::{trigger::DatabaseOperationType, Config, TriggerConfig, TriggerType};
+use abi::{trigger::DatabaseOperationType, TriggerConfig, TriggerType};
 use bson::{doc, Document};
-use function::DefaultFunctionManager;
+use function::FunctionManager;
 use futures::StreamExt;
 use tokio::task::JoinHandle;
 use tonic::async_trait;
@@ -16,28 +17,31 @@ pub struct Watcher {
 
 #[async_trait]
 pub trait WatcherManager {
-    async fn add_watcher(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error>;
-    async fn remove_watcher(&mut self, key: String) -> Result<(), anyhow::Error>;
+    async fn add(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error>;
+    async fn get(&mut self, key: String) -> Option<&JoinHandle<()>>;
+    async fn remove(&mut self, key: String) -> Result<(), anyhow::Error>;
 }
 
-pub struct DefaultWatcherManager {
+pub struct DefaultWatcherManager<FM: FunctionManager + Clone + Send + Sync> {
     watchers: HashMap<String, JoinHandle<()>>,
-    function_manager: DefaultFunctionManager,
+    function_manager: FM,
 }
-impl DefaultWatcherManager {
-    pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
+
+impl<FM: FunctionManager + Clone + Send + Sync> DefaultWatcherManager<FM> {
+    pub async fn new(fm: FM) -> Result<Self, anyhow::Error> {
         let watchers = HashMap::new();
-        let function_manager = DefaultFunctionManager::from_config(&config.db).await?;
         Ok(Self {
             watchers,
-            function_manager,
+            function_manager: fm,
         })
     }
 }
 
 #[async_trait]
-impl WatcherManager for DefaultWatcherManager {
-    async fn add_watcher(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error> {
+impl<FM: FunctionManager + Clone + Send + Sync + 'static> WatcherManager
+    for DefaultWatcherManager<FM>
+{
+    async fn add(&mut self, key: String, w: Watcher) -> Result<(), anyhow::Error> {
         if self.watchers.contains_key(&key) {
             return Ok(());
         }
@@ -90,10 +94,19 @@ impl WatcherManager for DefaultWatcherManager {
         }
     }
 
-    async fn remove_watcher(&mut self, key: String) -> Result<(), anyhow::Error> {
-        if let Some(j) = self.watchers.remove(&key) {
-            j.abort()
+    async fn get(&mut self, key: String) -> Option<&JoinHandle<()>> {
+        self.watchers.get(&key)
+    }
+
+    async fn remove(&mut self, key: String) -> Result<(), anyhow::Error> {
+        if let Some(j) = self.watchers.get(&key) {
+            j.abort();
+
+            while !j.is_finished() {
+                tokio::time::sleep(time::Duration::from_millis(100)).await;
+            }
         }
+        self.watchers.remove(&key);
 
         Ok(())
     }

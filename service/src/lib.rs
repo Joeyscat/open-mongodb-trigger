@@ -48,7 +48,9 @@ pub type FunctionStream = Pin<Box<dyn Stream<Item = Result<Function, Status>> + 
 
 pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
     let config_cloned = config.clone();
-    let wm = DefaultWatcherManager::from_config(config).await?;
+
+    let wm =
+        DefaultWatcherManager::new(DefaultFunctionManager::from_config(&config.db).await?).await?;
     tokio::spawn(async move {
         // change listener
         watch(&config_cloned, wm).await.unwrap();
@@ -114,7 +116,7 @@ where
                 let w = Watcher {
                     trigger: trigger.convert_to_abi_trigger()?,
                 };
-                match wm.add_watcher(key, w).await {
+                match wm.add(key, w).await {
                     Ok(()) => {}
                     Err(e) => warn!("add watcher error: {}", e),
                 };
@@ -132,7 +134,7 @@ where
                     let key = trigger.id.unwrap().to_hex();
                     // remove old then add new
                     info!("remove watcher: {}", key);
-                    match wm.remove_watcher(key.clone()).await {
+                    match wm.remove(key.clone()).await {
                         Ok(()) => {}
                         Err(e) => warn!("remove watcher error: {}", e),
                     };
@@ -145,7 +147,7 @@ where
                             trigger: trigger.convert_to_abi_trigger()?,
                         };
                         info!("add watcher: {:?}", w);
-                        match wm.add_watcher(key, w).await {
+                        match wm.add(key, w).await {
                             Ok(()) => {}
                             Err(e) => warn!("add watcher error: {}", e),
                         };
@@ -160,7 +162,7 @@ where
                     continue;
                 }
                 let key = trigger.id.unwrap().to_hex();
-                match wm.remove_watcher(key.clone()).await {
+                match wm.remove(key.clone()).await {
                     Ok(()) => {}
                     Err(e) => warn!("remove watcher error: {}", e),
                 };
