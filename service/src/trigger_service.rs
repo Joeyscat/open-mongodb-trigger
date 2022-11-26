@@ -42,7 +42,7 @@ impl TriggerService for TrigrService {
             .ok_or_else(|| Status::invalid_argument("missing trigger"))?;
 
         self.function_manager
-            .get(trigger.function_id.clone())
+            .get_by_id_userid(trigger.function_id.clone(), trigger.user_id.clone())
             .await?;
 
         let new_trigger = self.manager.create(trigger).await?;
@@ -152,10 +152,11 @@ mod tests {
     #[tokio::test]
     async fn rpc_create_should_work() {
         let config = TestConfig::default();
+        let user_id = rand_str();
 
         let func_svc = FuncService::from_config(&config).await.unwrap();
         let func = Function::new_wasm(
-            rand_str(),
+            user_id.clone(),
             rand_str(),
             "Hello, World!".as_bytes(),
             abi::function::Lang::Rust,
@@ -169,7 +170,7 @@ mod tests {
 
         let trigr_svc = TrigrService::from_config(&config).await.unwrap();
         let tr = Trigger::new_database(
-            rand_str(),
+            user_id,
             rand_str(),
             func1.unwrap().id,
             false,

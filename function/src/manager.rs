@@ -94,6 +94,25 @@ impl FunctionManager for DefaultFunctionManager {
         }
     }
 
+    async fn get_by_id_userid(
+        &self,
+        id: abi::FunctionId,
+        user_id: abi::UserId,
+    ) -> Result<abi::Function, abi::Error> {
+        let r = self
+            .coll
+            .find_one(
+                doc! {"_id": ObjectId::parse_str(id)?, "user_id": user_id},
+                FindOneOptions::default(),
+            )
+            .await?;
+
+        match r {
+            Some(tr) => Ok(tr.convert_to_abi()?),
+            None => Err(abi::Error::FunctionNotFound),
+        }
+    }
+
     async fn query(
         &self,
         query: abi::FunctionQuery,

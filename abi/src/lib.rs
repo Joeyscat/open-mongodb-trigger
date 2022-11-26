@@ -9,3 +9,4 @@ pub use pb::*;
 
 pub type TriggerId = String;
 pub type FunctionId = String;
+pub type UserId = String;

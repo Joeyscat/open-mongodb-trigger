@@ -81,6 +81,11 @@ pub trait FunctionManager {
     ) -> Result<abi::Function, abi::Error>;
     async fn delete(&self, id: abi::FunctionId) -> Result<abi::Function, abi::Error>;
     async fn get(&self, id: abi::FunctionId) -> Result<abi::Function, abi::Error>;
+    async fn get_by_id_userid(
+        &self,
+        id: abi::FunctionId,
+        user_id: abi::UserId,
+    ) -> Result<abi::Function, abi::Error>;
     async fn query(
         &self,
         query: abi::FunctionQuery,
