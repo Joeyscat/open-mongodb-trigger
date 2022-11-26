@@ -14,6 +14,13 @@ use tonic::{async_trait, Request, Response, Status};
 use trigger::{DefaultTriggerManager, TriggerManager};
 
 impl TrigrService {
+    pub fn new(manager: DefaultTriggerManager, function_manager: DefaultFunctionManager) -> Self {
+        Self {
+            manager,
+            function_manager,
+        }
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
         Ok(Self {
             manager: DefaultTriggerManager::from_config(&config.db).await?,

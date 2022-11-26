@@ -11,6 +11,10 @@ use tonic::{async_trait, Request, Response, Status};
 use crate::{FuncService, FunctionStream, TonicReceiverStream};
 
 impl FuncService {
+    pub fn new(manager: DefaultFunctionManager) -> Self {
+        Self { manager }
+    }
+
     pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
         Ok(Self {
             manager: DefaultFunctionManager::from_config(&config.db).await?,

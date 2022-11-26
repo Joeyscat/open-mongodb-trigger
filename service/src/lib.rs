@@ -12,12 +12,14 @@ use abi::{
     trigger::trigger_service_server::TriggerServiceServer, trigger::Trigger, Config, Function,
     FunctionServiceServer,
 };
+use bson::doc;
+use chrono::Duration;
 use function::DefaultFunctionManager;
-use futures::{Stream, StreamExt};
-use mongodb::{change_stream::event::OperationType, options::ChangeStreamOptions};
-use tokio::sync::mpsc;
+use futures::{Stream, StreamExt, TryStreamExt};
+use mongodb::{change_stream::event::OperationType, options::ChangeStreamOptions, Collection};
+use tokio::{runtime::Runtime, sync::mpsc};
 use tonic::{transport::Server, Status};
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 use trigger::DefaultTriggerManager;
 use watcher::WatcherManager;
 
@@ -48,19 +50,27 @@ pub type FunctionStream = Pin<Box<dyn Stream<Item = Result<Function, Status>> + 
 
 pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
     let config_cloned = config.clone();
+    let db = mongodb::Client::with_uri_str(config.db.mongodb_uri.clone())
+        .await
+        .unwrap()
+        .database(&config.db.db);
+    let trigger_coll = db.collection::<trigger::Trigger>(&config.db.trigger_coll);
+    let function_coll = db.collection::<function::Function>(&config.db.function_coll);
+    let trigr_manager = DefaultTriggerManager::new(trigger_coll.clone());
+    let func_manager = DefaultFunctionManager::new(function_coll.clone());
 
-    let wm =
-        DefaultWatcherManager::new(DefaultFunctionManager::from_config(&config.db).await?).await?;
     tokio::spawn(async move {
         // change listener
-        watch(&config_cloned, wm).await.unwrap();
+        watch(&config_cloned, trigger_coll, function_coll)
+            .await
+            .unwrap();
     });
 
+    let trigr_svc =
+        TriggerServiceServer::new(TrigrService::new(trigr_manager, func_manager.clone()));
+    let func_svc = FunctionServiceServer::new(FuncService::new(func_manager));
+
     let addr = format!("{}:{}", config.server.host, config.server.port).parse()?;
-
-    let trigr_svc = TriggerServiceServer::new(TrigrService::from_config(config).await?);
-    let func_svc = FunctionServiceServer::new(FuncService::from_config(config).await?);
-
     info!("Listening on {}", addr);
     // api services
     Server::builder()
@@ -72,18 +82,34 @@ pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-pub async fn watch<T>(config: &Config, mut wm: T) -> Result<(), abi::Error>
-where
-    T: WatcherManager,
-{
-    let db = mongodb::Client::with_uri_str(config.db.mongodb_uri.clone())
-        .await
-        .unwrap()
-        .database(&config.db.db);
+pub async fn watch(
+    config: &Config,
+    trigger_coll: Collection<trigger::Trigger>,
+    function_coll: Collection<function::Function>,
+) -> Result<(), anyhow::Error> {
+    let mut wm =
+        DefaultWatcherManager::new(DefaultFunctionManager::new(function_coll.clone())).await?;
 
-    let trigger_coll = db.collection::<trigger::Trigger>(&config.db.trigger_coll);
-    // let function_coll = db.collection::<function::Function>(&config.db.function_coll);
+    start_enabled_watchers(trigger_coll.clone(), wm.clone()).await?;
+    let timer = timer::Timer::new();
+    let repeat_seconds = config.watcher.scan_delay_seconds as i64;
+    let guard = {
+        let rt = Runtime::new().unwrap();
+        let x = trigger_coll.clone();
+        let y = wm.clone();
+        timer.schedule_repeating(Duration::seconds(repeat_seconds), move || {
+            info!("start_enabled_watchers timer tick");
+            let x = x.clone();
+            let y = y.clone();
+            match rt.block_on(async move { start_enabled_watchers(x, y).await }) {
+                Ok(_) => {}
+                Err(e) => error!("start_enabled_watchers error: {:?}", e),
+            }
+        })
+    };
+    info!("start_enabled_watchers timer setup");
 
+    info!("start watching trigger change");
     let mut trigger_cs = trigger_coll
         .watch(
             None,
@@ -115,6 +141,7 @@ where
                 let key = trigger.id.unwrap().to_hex();
                 let w = Watcher {
                     trigger: trigger.convert_to_abi_trigger()?,
+                    j: None,
                 };
                 match wm.add(key, w).await {
                     Ok(()) => {}
@@ -135,8 +162,8 @@ where
                     // remove old then add new
                     info!("remove watcher: {}", key);
                     match wm.remove(key.clone()).await {
-                        Ok(()) => {}
-                        Err(e) => warn!("remove watcher error: {}", e),
+                        Ok(_) => {}
+                        Err(e) => error!("remove watcher error: {}", e),
                     };
                     if update_description
                         .updated_fields
@@ -145,6 +172,7 @@ where
                     {
                         let w = Watcher {
                             trigger: trigger.convert_to_abi_trigger()?,
+                            j: None,
                         };
                         info!("add watcher: {:?}", w);
                         match wm.add(key, w).await {
@@ -163,8 +191,8 @@ where
                 }
                 let key = trigger.id.unwrap().to_hex();
                 match wm.remove(key.clone()).await {
-                    Ok(()) => {}
-                    Err(e) => warn!("remove watcher error: {}", e),
+                    Ok(_) => {}
+                    Err(e) => error!("remove watcher error: {}", e),
                 };
             }
             (OperationType::Insert | OperationType::Update | OperationType::Delete, _) => {
@@ -176,5 +204,47 @@ where
         };
     }
 
+    drop(guard);
+    error!("watch end");
+    Ok(())
+}
+
+/// check if there are any enabled triggers that have not add to WatcherManager,
+/// then add them.
+pub async fn start_enabled_watchers<T>(
+    trigger_coll: Collection<trigger::Trigger>,
+    mut wm: T,
+) -> Result<(), anyhow::Error>
+where
+    T: WatcherManager,
+{
+    let filter = doc! {"enabled":true};
+    let mut cursor = trigger_coll.find(filter, None).await?;
+
+    loop {
+        let ret = cursor.try_next().await?;
+
+        match ret {
+            Some(trigger) => {
+                let key = trigger.id.unwrap().to_hex();
+                if wm.get(key.clone()).await.is_some() {
+                    continue;
+                }
+                info!("watcher({}) has not started", &key);
+                let w = Watcher {
+                    trigger: trigger.convert_to_abi_trigger()?,
+                    j: None,
+                };
+                info!("add watcher: {:?}", w);
+                match wm.add(key, w).await {
+                    Ok(()) => {}
+                    Err(e) => warn!("add watcher error: {}", e),
+                };
+            }
+            None => {
+                break;
+            }
+        }
+    }
     Ok(())
 }

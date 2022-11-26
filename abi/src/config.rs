@@ -6,6 +6,7 @@ use crate::Error;
 pub struct Config {
     pub db: DbConfig,
     pub server: ServerConfig,
+    pub watcher: WatcherConfig,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -20,6 +21,11 @@ pub struct DbConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct WatcherConfig {
+    pub scan_delay_seconds: u32,
 }
 
 impl Config {

@@ -7,3 +7,6 @@ function_coll = 'function'
 [server]
 host = '0.0.0.0'
 port = 6788
+
+[watcher]
+scan_delay_seconds = 120
