@@ -11,23 +11,16 @@ Provides triggers that run outside the database server.
 * mongodb cluster
 
 
-# Build
+# Getting start
+
+## build
 
 ```bash
 ❯ make build
-```
-
-
-# Test
-
-```bash
 ❯ make build-example
-❯ make test
 ```
 
-# Usage
-
-## Server
+## start the service
 
 ```bash
 ❯ cp service/fixtrues/config.toml ~/.config/mongodb-trigger.toml
@@ -39,7 +32,9 @@ Provides triggers that run outside the database server.
 ```
 
 
-## CLI
+## access service using CLI
+
+deploy function and create trigger
 
 ```
 ❯ cp target/release/tri ~/.cargo/bin/
@@ -56,7 +51,7 @@ server log
 >2022-11-22T06:49:13.437160Z  INFO service: add watcher: Watcher { trigger: Trigger { id: "a", user_id: "1", name: "insert-delete", trigger_type: Database, function_id: "a", enabled: true, trigger_config: Some(Database(DatabaseConfig { data_source: "mongodb://test:test@127.0.0.1:27017/db1", database: "db1", collection: "c1", operation_types: [Insert, Delete] })) } }
 
 
-## Fire the trigger
+## fire the trigger
 
 make a change of the watched collection and we will see the function is called.
 
@@ -84,3 +79,17 @@ handle event: ChangeStreamEvent { ... }
 r ==== EventResult { ok: false, msg: "unsuppored op_type: Delete" }
 wrapped_output: [...]
 2022-11-22T07:00:31.872091Z  INFO service::func: called function ok: EventResult { ok: false, msg: "unsuppored op_type: Delete" }
+
+# Examples
+
+- [wasm functions](examples/wasm/README.md) - functions that run on wasm runtime
+
+
+# Built On
+
+- [MongoDB Change Streams](https://www.mongodb.com/docs/manual/changeStreams/#change-streams)
+- [Wasmtime](https://github.com/bytecodealliance/wasmtime)
+
+# Documentation
+
+[RFC](rfcs)

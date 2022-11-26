@@ -29,7 +29,7 @@ pub extern "C" fn event_handler_entry(param_ptr: u32) -> u32 {
     let event_bytes: Vec<u8> = get_raw_bytes(param_ptr as *const u8);
     // deserialize bytes to event struct
     let r = match serde_json::from_slice::<event::ChangeStreamEvent<Document>>(&event_bytes) {
-        Ok(event) => match event_handler(event) {
+        Ok(event) => match handle_event(event) {
             Ok(_) => EventResult::ok(),
             Err(e) => EventResult::error(e.to_string()),
         },
@@ -47,7 +47,7 @@ pub extern "C" fn event_handler_entry(param_ptr: u32) -> u32 {
 }
 
 /// implement by user
-fn event_handler(event: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
+fn handle_event(event: ChangeStreamEvent<Document>) -> anyhow::Result<()> {
     println!("handle event: {:?}", event);
     if event.operation_type == OperationType::Delete {
         return Err(anyhow!("unsuppored op_type: Delete"));
