@@ -2,6 +2,7 @@
 
 Provides triggers that run outside the database server.
 
+![basic arch](rfcs/images/arch01.png)
 
 # Requirements
 

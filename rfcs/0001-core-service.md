@@ -16,9 +16,6 @@ We need a common solution for various requirements following: 1) incremental dat
 
 Basic architecture:
 
-![basic arch](images/arch01.png)
-
-
 ![basic arch](images/arch02.png)
 
 ### Service interface
