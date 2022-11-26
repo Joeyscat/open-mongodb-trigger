@@ -32,6 +32,7 @@ pub struct TrigrService {
 
 pub struct FuncService {
     manager: DefaultFunctionManager,
+    trigger_manager: DefaultTriggerManager,
 }
 
 pub struct TonicReceiverStream<T> {
@@ -66,9 +67,11 @@ pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
             .unwrap();
     });
 
-    let trigr_svc =
-        TriggerServiceServer::new(TrigrService::new(trigr_manager, func_manager.clone()));
-    let func_svc = FunctionServiceServer::new(FuncService::new(func_manager));
+    let trigr_svc = TriggerServiceServer::new(TrigrService::new(
+        trigr_manager.clone(),
+        func_manager.clone(),
+    ));
+    let func_svc = FunctionServiceServer::new(FuncService::new(func_manager, trigr_manager));
 
     let addr = format!("{}:{}", config.server.host, config.server.port).parse()?;
     info!("Listening on {}", addr);

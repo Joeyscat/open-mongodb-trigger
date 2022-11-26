@@ -80,7 +80,7 @@ impl Trigger {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DefaultTriggerManager {
     coll: Collection<Trigger>,
 }

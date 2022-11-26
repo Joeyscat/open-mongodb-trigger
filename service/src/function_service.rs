@@ -3,21 +3,26 @@ use abi::{
         CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetRequest, GetResponse,
         QueryRequest, UpdateRequest, UpdateResponse,
     },
-    Config, Func, FunctionService,
+    Config, Func, FunctionService, TriggerQuery,
 };
 use function::{DefaultFunctionManager, FunctionManager};
 use tonic::{async_trait, Request, Response, Status};
+use trigger::{DefaultTriggerManager, TriggerManager};
 
 use crate::{FuncService, FunctionStream, TonicReceiverStream};
 
 impl FuncService {
-    pub fn new(manager: DefaultFunctionManager) -> Self {
-        Self { manager }
+    pub fn new(manager: DefaultFunctionManager, trigger_manager: DefaultTriggerManager) -> Self {
+        Self {
+            manager,
+            trigger_manager,
+        }
     }
 
     pub async fn from_config(config: &Config) -> Result<Self, anyhow::Error> {
         Ok(Self {
             manager: DefaultFunctionManager::from_config(&config.db).await?,
+            trigger_manager: DefaultTriggerManager::from_config(&config.db).await?,
         })
     }
 }
@@ -60,6 +65,18 @@ impl FunctionService for FuncService {
         request: Request<DeleteRequest>,
     ) -> Result<Response<DeleteResponse>, Status> {
         let request = request.into_inner();
+        let mut r = self
+            .trigger_manager
+            .query(TriggerQuery {
+                function_id: request.id.clone(),
+                ..Default::default()
+            })
+            .await;
+        if r.recv().await.is_some() {
+            return Err(Status::aborted(
+                "there are triggers associated with this function",
+            ));
+        }
         let function = self.manager.delete(request.id).await?;
         Ok(Response::new(DeleteResponse {
             function: Some(function),
