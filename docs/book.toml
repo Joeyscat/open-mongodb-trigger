@@ -1,0 +1,6 @@
+[book]
+authors = ["Joeyscat"]
+language = "zh_CN"
+multilingual = false
+src = "src"
+title = "Open MongoDB Trigger"
