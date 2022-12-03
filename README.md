@@ -92,4 +92,5 @@ wrapped_output: [...]
 
 # Documentation
 
-[RFC](rfcs)
+- [RFC](rfcs)
+- [Guide](https://joeyscat.github.io/open-mongodb-trigger/)

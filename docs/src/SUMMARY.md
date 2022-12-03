@@ -6,10 +6,12 @@
 
 - [创建函数](guide/create_function.md)
 - [创建触发器](guide/create_trigger.md)
-- [触发](guide/trigger_it.md)
+- [触发触发器](guide/trigger_it.md)
 
 
 # 参考指南
+
+- [CLI](cli.md)
 
 - [函数](function/README.md)
 
