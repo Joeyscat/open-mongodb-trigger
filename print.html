@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">简介</a></li><li class="chapter-item expanded affix "><li class="part-title">用户指南</li><li class="chapter-item expanded "><a href="guide/create_function.html"><strong aria-hidden="true">1.</strong> 创建函数</a></li><li class="chapter-item expanded "><a href="guide/create_trigger.html"><strong aria-hidden="true">2.</strong> 创建触发器</a></li><li class="chapter-item expanded "><a href="guide/trigger_it.html"><strong aria-hidden="true">3.</strong> 触发</a></li><li class="chapter-item expanded affix "><li class="part-title">参考指南</li><li class="chapter-item expanded "><a href="function/index.html"><strong aria-hidden="true">4.</strong> 函数</a></li><li class="chapter-item expanded "><a href="trigger/index.html"><strong aria-hidden="true">5.</strong> 触发器</a></li><li class="chapter-item expanded "><a href="for_developers/index.html"><strong aria-hidden="true">6.</strong> 开发者指南</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">简介</a></li><li class="chapter-item expanded affix "><li class="part-title">用户指南</li><li class="chapter-item expanded "><a href="guide/create_function.html"><strong aria-hidden="true">1.</strong> 创建函数</a></li><li class="chapter-item expanded "><a href="guide/create_trigger.html"><strong aria-hidden="true">2.</strong> 创建触发器</a></li><li class="chapter-item expanded "><a href="guide/trigger_it.html"><strong aria-hidden="true">3.</strong> 触发触发器</a></li><li class="chapter-item expanded affix "><li class="part-title">参考指南</li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> CLI</a></li><li class="chapter-item expanded "><a href="function/index.html"><strong aria-hidden="true">5.</strong> 函数</a></li><li class="chapter-item expanded "><a href="trigger/index.html"><strong aria-hidden="true">6.</strong> 触发器</a></li><li class="chapter-item expanded "><a href="for_developers/index.html"><strong aria-hidden="true">7.</strong> 开发者指南</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -135,12 +135,122 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="简介"><a class="header" href="#简介">简介</a></h1>
+<p>这是一个基于ChangeStream和WebAssemblly实现的外部MongoDB触发器</p>
+<p>参考MongoDB官方的Trigger：</p>
+<p><a href="https://www.mongodb.com/docs/atlas/app-services/triggers/database-triggers/">https://www.mongodb.com/docs/atlas/app-services/triggers/database-triggers/</a></p>
+<h2 id="为什么要创建这个项目"><a class="header" href="#为什么要创建这个项目">为什么要创建这个项目？</a></h2>
+<p>MongoDB ChangeStream 有许多应用场景：</p>
+<ul>
+<li>数据迁移/数据同步</li>
+<li>（微服务）变化监听</li>
+<li>实时分析/实时通知</li>
+<li>事件驱动架构组件</li>
+<li>交互系统</li>
+</ul>
+<p>要实现这些功能，我们需要编写以下代码，将代码部署到服务器并进行维护：</p>
+<pre><code class="language-go">coll := get_coll(mongodb_uri)
+cs := watch(coll)
+loop {
+    event := cs.next()
+    handle(event) # 业务逻辑
+}
+</code></pre>
+<p>我们需要一个服务，让用户能订阅自己感兴趣的 ChangeStream 事件，并编写一个函数来进行业务处理，即可实现上述的功能。这样，我们将节省很多时间（编写重复代码）和服务器成本（部署代码）。</p>
+<ul>
+<li><a href="guide/create_function.html">如何编写代码并部署</a></li>
+<li><a href="guide/create_trigger.html">如何创建触发器</a></li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="创建函数"><a class="header" href="#创建函数">创建函数</a></h1>
+<p>你可以使用任何编程语言来编写你的函数，前提是它能够将你的代码编译成 wasm 文件。</p>
+<p>这里我们用仓库里的一个 Go 示例项目（<a href="https://github.com/Joeyscat/open-mongodb-trigger/tree/main/examples/wasm/go-event-handler">go-event-handler</a>），来演示怎么编写代码并构建出一个 wasm 文件。</p>
+<h2 id="安装环境"><a class="header" href="#安装环境">安装环境</a></h2>
+<p><a href="https://tinygo.org/getting-started/install/">TinyGo - Quick install guide</a></p>
+<h2 id="clone-示例代码"><a class="header" href="#clone-示例代码">Clone 示例代码</a></h2>
+<pre><code class="language-bash">❯ git clone https://github.com/Joeyscat/open-mongodb-trigger.git
+❯ cd open-mongodb-trigger/examples/wasm/go-event-handler
+❯ tree
+.
+├── entry.go
+├── Event_json.go
+├── EventResult_json.go
+├── go.mod
+├── go.sum
+├── lib.go # 在 handlerEvent 函数中添加你的代码
+├── Makefile
+├── model
+│   ├── ChangeNamespace_json.go
+│   ├── ChangeStreamEvent_json.go
+│   ├── EventResult_json.go
+│   ├── model.go
+│   └── ResumeToken_json.go
+├── model.go
+└── README.md
+</code></pre>
+<h2 id="编写函数"><a class="header" href="#编写函数">编写函数</a></h2>
+<p>修改 lib.go 文件中的 handlerEvent 函数。</p>
+<h2 id="编译代码"><a class="header" href="#编译代码">编译代码</a></h2>
+<pre><code class="language-bash">❯ make build
+go generate model/model.go
+tinygo build -o target/example_wasm_go_event_handler_lib.wasm -target wasi
+❯ tree target/
+target/
+└── example_wasm_go_event_handler_lib.wasm
+</code></pre>
+<h2 id="部署-wasm-函数"><a class="header" href="#部署-wasm-函数">部署 wasm 函数</a></h2>
+<p>编译得到 wasm 文件之后，就可以用它来创建一个函数。</p>
+<pre><code class="language-bash">❯ tri function create -h
+create a function
+
+Usage: tri function create --name &lt;NAME&gt; --path &lt;PATH&gt; --type &lt;TYPE&gt; --user-id &lt;USER_ID&gt; --lang &lt;LANG&gt;
+
+Options:
+  -n, --name &lt;NAME&gt;
+  -p, --path &lt;PATH&gt;        path of the function file (*.wasm)
+  -t, --type &lt;TYPE&gt;        now supported: wasm
+  -u, --user-id &lt;USER_ID&gt;
+  -l, --lang &lt;LANG&gt;
+  -h, --help               Print help information
+</code></pre>
+<p>创建函数成功我们会得到一个函数 ID ，后面创建触发器的时候会用到。</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="创建触发器"><a class="header" href="#创建触发器">创建触发器</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="触发"><a class="header" href="#触发">触发</a></h1>
+<p>看看如何通过 CLI 创建一个触发器：</p>
+<pre><code class="language-bash"> ❯ tri trigger create -h
+create a trigger
+
+Usage: tri trigger create --name &lt;NAME&gt; --user-id &lt;USER_ID&gt; --type &lt;TYPE&gt; --source &lt;SOURCE&gt; --database &lt;DATABASE&gt; --collection &lt;COLLECTION&gt; --operation-types &lt;OPERATION_TYPES&gt; --function-id &lt;FUNCTION_ID&gt;
+
+Options:
+  -n, --name &lt;NAME&gt;         # 触发器名称，对于同一个用户不能重复
+  -u, --user-id &lt;USER_ID&gt;   # 用户ID，代表触发器所有者
+  -t, --type &lt;TYPE&gt;         # 触发器类型，当前仅支持 database
+  -s, --source &lt;SOURCE&gt;     # 监听的数据源，就是一个MongoDB连接串
+  -d, --database &lt;DATABASE&gt;     # 监听的数据库
+  -c, --collection &lt;COLLECTION&gt; # 监听的集合
+  -o, --operation-types &lt;OPERATION_TYPES&gt;  # 监听的操作类型
+  -f, --function-id &lt;FUNCTION_ID&gt;          # 函数ID
+  -h, --help                               Print help information
+</code></pre>
+<p>函数 ID 就是前面我们创建函数返回的结果。</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="触发触发器"><a class="header" href="#触发触发器">触发触发器</a></h1>
+<p>只要我们做出了触发器所关注的操作，相应的函数就会被执行。</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cli"><a class="header" href="#cli">CLI</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="函数"><a class="header" href="#函数">函数</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="触发器"><a class="header" href="#触发器">触发器</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="开发者指南"><a class="header" href="#开发者指南">开发者指南</a></h1>
+<h2 id="项目结构"><a class="header" href="#项目结构">项目结构</a></h2>
+<p>项目分为以下模块：</p>
+<ul>
+<li><code>Trigger</code> - 负责触发器元数据的存储管理</li>
+<li><code>Function</code> - 负责函数元数据的存储管理</li>
+<li><code>Service</code> - 为 Trigger 、 Function 模块暴露 gRPC 服务接口；订阅触发器元数据的变更，根据变更开启/关闭对关联数据源的订阅，并在收到事件时调用 WASM 模块执行触发器关联的函数</li>
+<li><code>WASM</code> - 封装了 wasm 运行时，用于执行触发器关联函数的代码</li>
+<li><code>CLI</code> 访问 gRPC 服务的客户端</li>
+</ul>
+<h2 id="开发计划"><a class="header" href="#开发计划">开发计划</a></h2>
+<ul>
+<li>目前整个项目是一个单体应用，会通过 WASM 模块执行用户的 wasm 代码，很容易成为瓶颈。我们需要重新构建相关代码，使 WASM 模块能够独立部署，随着负载进行扩缩容。</li>
+<li>Service gRPC 接口鉴权</li>
+</ul>
 
                     </main>
 

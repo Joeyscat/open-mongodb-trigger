@@ -74,7 +74,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">简介</a></li><li class="chapter-item expanded affix "><li class="part-title">用户指南</li><li class="chapter-item expanded "><a href="../guide/create_function.html"><strong aria-hidden="true">1.</strong> 创建函数</a></li><li class="chapter-item expanded "><a href="../guide/create_trigger.html" class="active"><strong aria-hidden="true">2.</strong> 创建触发器</a></li><li class="chapter-item expanded "><a href="../guide/trigger_it.html"><strong aria-hidden="true">3.</strong> 触发</a></li><li class="chapter-item expanded affix "><li class="part-title">参考指南</li><li class="chapter-item expanded "><a href="../function/index.html"><strong aria-hidden="true">4.</strong> 函数</a></li><li class="chapter-item expanded "><a href="../trigger/index.html"><strong aria-hidden="true">5.</strong> 触发器</a></li><li class="chapter-item expanded "><a href="../for_developers/index.html"><strong aria-hidden="true">6.</strong> 开发者指南</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">简介</a></li><li class="chapter-item expanded affix "><li class="part-title">用户指南</li><li class="chapter-item expanded "><a href="../guide/create_function.html"><strong aria-hidden="true">1.</strong> 创建函数</a></li><li class="chapter-item expanded "><a href="../guide/create_trigger.html" class="active"><strong aria-hidden="true">2.</strong> 创建触发器</a></li><li class="chapter-item expanded "><a href="../guide/trigger_it.html"><strong aria-hidden="true">3.</strong> 触发触发器</a></li><li class="chapter-item expanded affix "><li class="part-title">参考指南</li><li class="chapter-item expanded "><a href="../cli.html"><strong aria-hidden="true">4.</strong> CLI</a></li><li class="chapter-item expanded "><a href="../function/index.html"><strong aria-hidden="true">5.</strong> 函数</a></li><li class="chapter-item expanded "><a href="../trigger/index.html"><strong aria-hidden="true">6.</strong> 触发器</a></li><li class="chapter-item expanded "><a href="../for_developers/index.html"><strong aria-hidden="true">7.</strong> 开发者指南</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -134,6 +134,24 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="创建触发器"><a class="header" href="#创建触发器">创建触发器</a></h1>
+<p>看看如何通过 CLI 创建一个触发器：</p>
+<pre><code class="language-bash"> ❯ tri trigger create -h
+create a trigger
+
+Usage: tri trigger create --name &lt;NAME&gt; --user-id &lt;USER_ID&gt; --type &lt;TYPE&gt; --source &lt;SOURCE&gt; --database &lt;DATABASE&gt; --collection &lt;COLLECTION&gt; --operation-types &lt;OPERATION_TYPES&gt; --function-id &lt;FUNCTION_ID&gt;
+
+Options:
+  -n, --name &lt;NAME&gt;         # 触发器名称，对于同一个用户不能重复
+  -u, --user-id &lt;USER_ID&gt;   # 用户ID，代表触发器所有者
+  -t, --type &lt;TYPE&gt;         # 触发器类型，当前仅支持 database
+  -s, --source &lt;SOURCE&gt;     # 监听的数据源，就是一个MongoDB连接串
+  -d, --database &lt;DATABASE&gt;     # 监听的数据库
+  -c, --collection &lt;COLLECTION&gt; # 监听的集合
+  -o, --operation-types &lt;OPERATION_TYPES&gt;  # 监听的操作类型
+  -f, --function-id &lt;FUNCTION_ID&gt;          # 函数ID
+  -h, --help                               Print help information
+</code></pre>
+<p>函数 ID 就是前面我们创建函数返回的结果。</p>
 
                     </main>
 
