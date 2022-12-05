@@ -3,9 +3,9 @@ use common::{
     mem::{get_raw_bytes, wrap_bytes},
     ALLOCATE_FUNC_RUST, DEALLOCATE_FUNC_RUST,
 };
-use tracing::info;
+use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime::*;
-use wasmtime_wasi::sync::WasiCtxBuilder;
+use wasmtime_wasi::{sync::WasiCtxBuilder, WasiCtx};
 
 #[derive(Default)]
 pub struct WasmEngine {
@@ -16,6 +16,11 @@ pub struct WasmEngine {
 pub struct CallOptions {
     pub allocate_func: String,
     pub deallocate_func: String,
+}
+
+struct WasmtimeHttpCtx {
+    pub wasi: WasiCtx,
+    pub http: HttpCtx,
 }
 
 impl WasmEngine {
@@ -41,13 +46,32 @@ impl WasmEngine {
     ) -> Result<Vec<u8>> {
         let engine = self.inner.clone();
         let mut linker = Linker::new(&engine);
-        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
 
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
             // .inherit_args()?
             .build();
-        let mut store = Store::new(&engine, wasi);
+
+        // link the experimental HTTP support
+        let allowed_hosts = Some(vec!["insecure:allow-all".to_string()]);
+        let max_concurrent_requests = Some(42);
+        let http = HttpCtx {
+            allowed_hosts,
+            max_concurrent_requests,
+        };
+
+        let ctx = WasmtimeHttpCtx { wasi, http };
+
+        let mut store = Store::new(&engine, ctx);
+        wasmtime_wasi::add_to_linker(&mut linker, |cx: &mut WasmtimeHttpCtx| -> &mut WasiCtx {
+            &mut cx.wasi
+        })?;
+
+        // Link `wasi_experimental_http`
+        let http = HttpState::new()?;
+        http.add_to_linker(&mut linker, |cx: &WasmtimeHttpCtx| -> HttpCtx {
+            cx.http.clone()
+        })?;
 
         let module = Module::new(&engine, func)?;
         let instance = linker.instantiate(&mut store, &module)?;
@@ -71,15 +95,11 @@ impl WasmEngine {
         let params = params.as_ref();
         let params_data_all = wrap_bytes(params);
         let params_data_size = params_data_all.len();
-        // 为参数分配内存并获取指针
-        info!("allocate");
+
         let allocate_for_params = allocate.call(&mut store, params_data_size as u32)?;
 
-        // 将参数写入内存
-        info!("write params data");
         memory.write(&mut store, allocate_for_params as usize, &params_data_all)?;
-        // CALL
-        info!("call wasm func");
+
         let result_pointer_in_store = func.call(&mut store, allocate_for_params)?;
 
         if result_pointer_in_store == 0 {

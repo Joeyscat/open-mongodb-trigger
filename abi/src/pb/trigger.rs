@@ -383,7 +383,7 @@ pub mod trigger_service_client {
 pub mod trigger_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    ///Generated trait containing gRPC methods that should be implemented for use with TriggerServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with TriggerServiceServer.
     #[async_trait]
     pub trait TriggerService: Send + Sync + 'static {
         /// create a trigger
@@ -416,7 +416,7 @@ pub mod trigger_service_server {
             &self,
             request: tonic::Request<super::GetRequest>,
         ) -> Result<tonic::Response<super::GetResponse>, tonic::Status>;
-        ///Server streaming response type for the query method.
+        /// Server streaming response type for the query method.
         type queryStream: futures_core::Stream<Item = Result<super::Trigger, tonic::Status>>
             + Send
             + 'static;

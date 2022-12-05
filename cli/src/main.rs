@@ -50,6 +50,7 @@ enum TriggerCommands {
         name: String,
         #[arg(short, long)]
         user_id: String,
+        /// now supported: database
         #[arg(short, long)]
         type_: String,
         #[arg(short, long)]
