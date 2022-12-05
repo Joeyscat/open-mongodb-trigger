@@ -85,7 +85,10 @@ impl<FM: FunctionManager + Clone + Send + Sync + 'static> WatcherManager
                     _ => pipeline.push(doc! {"$match": {"operationType": {"$in": op_types}}}),
                 };
 
-                let mut trigger_cs = coll.watch(pipeline, None).await.unwrap();
+                let mut trigger_cs = match coll.watch(pipeline, None).await {
+                    Ok(cs) => cs,
+                    Err(e) => return Err(anyhow!("watch error: {}", e.to_string())),
+                };
 
                 let fm_cloned = self.function_manager.clone();
                 let function_id = w.trigger.function_id.clone();
