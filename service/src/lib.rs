@@ -57,8 +57,8 @@ pub async fn start_server(config: &Config) -> Result<(), anyhow::Error> {
         .database(&config.db.db);
     let trigger_coll = db.collection::<trigger::Trigger>(&config.db.trigger_coll);
     let function_coll = db.collection::<function::Function>(&config.db.function_coll);
-    let trigr_manager = DefaultTriggerManager::new(trigger_coll.clone());
-    let func_manager = DefaultFunctionManager::new(function_coll.clone());
+    let trigr_manager = DefaultTriggerManager::from_config(&config.db).await?;
+    let func_manager = DefaultFunctionManager::from_config(&config.db).await?;
 
     tokio::spawn(async move {
         // change listener
