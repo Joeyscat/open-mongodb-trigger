@@ -234,7 +234,60 @@ Options:
 <div style="break-before: page; page-break-before: always;"></div><h1 id="触发触发器"><a class="header" href="#触发触发器">触发触发器</a></h1>
 <p>只要我们做出了触发器所关注的操作，相应的函数就会被执行。</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cli"><a class="header" href="#cli">CLI</a></h1>
+<p>CLI 是用于访服务接口的客户端工具，用户可以使用该工具<a href="guide/create_function.html">上传自己编译的处理函数</a>，<a href="guide/create_trigger.html">创建触发器</a>。</p>
+<pre><code class="language-bash">❯ tri -h
+Usage: tri [OPTIONS] [NAME] [COMMAND]
+
+Commands:
+  test      does testing things
+  trigger   trigger manager
+  function  function manager
+  help      Print this message or the help of the given subcommand(s)
+
+Arguments:
+  [NAME]  Optional name to operate on
+
+Options:
+  -c, --config &lt;FILE&gt;  Sets a custom config file
+  -d, --debug...       Turn debugging information on
+  -h, --help           Print help information
+  -V, --version        Print version information
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="函数"><a class="header" href="#函数">函数</a></h1>
+<p>我们的函数是通过运行在 Wasmtime 之上的，所以这里的函数指的不是我们编写的业务处理代码，而是将代码编译处理得到的 wasm 文件。理论上我们可以用任何支持 wasm 的编程语言来编写处理代码。</p>
+<h2 id="关于函数的一些约定"><a class="header" href="#关于函数的一些约定">关于函数的一些约定</a></h2>
+<p><em>具体实现请查阅 wasm 模块代码</em></p>
+<p>这是我们规定的函数签名，函数名为 <code>event_handler_entry</code>，参数和返回值各一个，都是32位无符号整型；</p>
+<pre><code class="language-go">//export event_handler_entry
+func EventHandlerEntry(p *uint32) uint32 {
+    //
+}
+</code></pre>
+<p>目前 Wasmtime 只支持传递基础类型的参数，所以我们想要传递复杂参数就得绕个弯去实现。</p>
+<ul>
+<li><a href="https://wasmedge.org/book/en/sdk/go/memory.html">Pass complex parameters to Wasm functions</a></li>
+</ul>
+<p>简单总结下就是：</p>
+<ol>
+<li>首先调用内存分配函数分配内存，拿到内存地址</li>
+<li>往这块内存写入参数</li>
+<li>调用我们自己的函数（如<code>event_handler_entry</code>），传入上面的内存地址</li>
+<li>在我们的函数中通过地址反推得到参数，执行业务代码</li>
+<li>函数的结尾将需要返回对象的指针返回</li>
+<li>函数返回后，通过返回的指针反推得到执行结果</li>
+</ol>
+<blockquote>
+<p>注意在上述过程中执行环境会在 Host 环境和 Wasm 环境来回切换。</p>
+</blockquote>
+<p>如何根据参数指针反推出完整参数？</p>
+<p>我们在分配内存时多申请4byte，前4byte固定用来保存参数大小，如图：</p>
+<p><img src="function/../images/pass-parameter.png" alt="参数传递" /></p>
+<p>当然作为用户是不需要了解这些东西的，我们已经为部分编程语言实现了这些业务无关的代码，用户只需要在模板的基础上添加自己的逻辑即可。</p>
+<h2 id="已支持的编程语言"><a class="header" href="#已支持的编程语言">已支持的编程语言</a></h2>
+<ul>
+<li><a href="https://github.com/Joeyscat/open-mongodb-trigger/tree/main/examples/wasm/go-event-handler">Go</a></li>
+<li><a href="https://github.com/Joeyscat/open-mongodb-trigger/tree/main/examples/wasm/rust-event-handler-lib">Rust</a></li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="触发器"><a class="header" href="#触发器">触发器</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="开发者指南"><a class="header" href="#开发者指南">开发者指南</a></h1>
 <h2 id="项目结构"><a class="header" href="#项目结构">项目结构</a></h2>
